@@ -1,80 +1,114 @@
+import 'package:chatai/bloc/chat_bloc/chat_bloc.dart';
+import 'package:chatai/bloc/chat_bloc/chat_event.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:chat_bubbles/chat_bubbles.dart';
 
-class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+import '../bloc/chat_bloc/chat_state.dart';
 
-  @override
-  State<ChatScreen> createState() => _ChatScreenState();
-}
-
-class _ChatScreenState extends State<ChatScreen> {
-  final List<Map<String, String>> _messages = [
-    {"role": "user", "text": "Hi there!"},
-    {"role": "assistant", "text": "Hello! How can I help you?"},
-  ];
+class ChatScreen extends StatelessWidget {
   final TextEditingController _controller = TextEditingController();
 
-  void _sendMessage() {
-    final userText = _controller.text.trim();
-    if (userText.isEmpty) return;
-    setState(() {
-      _messages.add({"role": "user", "text": userText});
-      _messages.add({"role": "assistant", "text": "Assistant reply example."});
-      _controller.clear();
-    });
+  ChatScreen({super.key});
+  final ScrollController _scrollController = ScrollController();
+
+  void _sendMessage(BuildContext context) {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+    context.read<ChatBloc>().add(SendMessage(text, 'user'));
+    // context.read<ChatBloc>().add(SendMessage("Assistant reply.", 'assistant'));
+    _controller.clear();
   }
 
-  Widget _buildBubble(Map<String, String> msg) {
-    final isUser = msg["role"] == "user";
-    return BubbleSpecialOne(
-      text: msg["text"] ?? "",
-      isSender: isUser,
-      color: isUser ? Colors.blue : Colors.grey[300]!,
-      textStyle: TextStyle(
-        color: isUser ? Colors.white : Colors.black87,
-        fontSize: 15,
-      ),
-    );
+  Widget getUi(ChatState state) {
+    if (state is ChatLoading) {
+      return Center(child: CircularProgressIndicator());
+    } else if (state is ChatLoaded) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+      return ListView.builder(
+        padding: EdgeInsets.all(12),
+        controller: _scrollController,
+
+        itemCount: state.messages.length,
+        itemBuilder: (context, idx) {
+          final m = state.messages[idx];
+          return BubbleSpecialOne(
+            text: m.text,
+            isSender: m.role == 'user',
+            color: m.role == 'user' ? Colors.blueAccent : Colors.grey.shade200,
+            textStyle: TextStyle(
+              color: m.role == 'user' ? Colors.white : Colors.black87,
+              fontSize: 16,
+            ),
+            tail: true,
+            // margin: BubbleEdges.only(top: 8),
+          );
+        },
+      );
+    } else if (state is ChatError) {
+      return Center(child: Text('Error: ${state.error}'));
+    } else {
+      return Center(child: Text('No messages.'));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("Chat Assistant")),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              padding: EdgeInsets.all(8),
-              itemCount: _messages.length,
-              itemBuilder: (context, idx) => _buildBubble(_messages[idx]),
-            ),
-          ),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            child: Row(
+    return BlocProvider(
+      create: (_) => ChatBloc()..add(LoadMessages()),
+      child: Scaffold(
+        appBar: AppBar(title: Text('Chat assistant')),
+        body: BlocBuilder<ChatBloc, ChatState>(
+          builder: (buildContext, state) {
+            return Column(
               children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    decoration: InputDecoration(
-                      hintText: "Type a message…",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                Expanded(child: getUi(state)),
+                SafeArea(
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _controller,
+                            decoration: InputDecoration(
+                              hintText: "Type a message...",
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 20,
+                              ),
+                            ),
+                            textInputAction: TextInputAction.send,
+                            onSubmitted: (_) => _sendMessage(buildContext),
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        CircleAvatar(
+                          radius: 24,
+                          backgroundColor: Colors.blueAccent,
+                          child: IconButton(
+                            icon: Icon(Icons.send, color: Colors.white),
+                            onPressed: () => _sendMessage(buildContext),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-                IconButton(
-                  icon: Icon(Icons.send, color: Colors.blue),
-                  onPressed: _sendMessage,
-                ),
               ],
-            ),
-          ),
-          SizedBox(height: 20),
-        ],
+            );
+          },
+        ),
       ),
     );
   }
