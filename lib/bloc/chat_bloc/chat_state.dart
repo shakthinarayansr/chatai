@@ -11,6 +11,10 @@ class ChatInitial extends ChatState {}
 
 class ChatLoading extends ChatState {}
 
+class MessageSent extends ChatState {}
+
+class ProcessCompleted extends ChatState {}
+
 class ChatLoaded extends ChatState {
   final List<ChatMessage> messages;
   const ChatLoaded(this.messages);

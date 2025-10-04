@@ -1,9 +1,12 @@
 import 'dart:async';
 
 import 'package:chatai/models/chat_model.dart';
+import 'package:chatai/providers/get_process_provider.dart';
 import 'package:chatai/providers/image_upload_provider.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../models/each_poll_job.dart';
+import '../../providers/polling_service.dart';
 import 'chat_event.dart';
 import 'chat_state.dart';
 
@@ -70,6 +73,44 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     } catch (e) {
       emit(ChatError(e.toString()));
     }
+    emit(MessageSent());
+
+    Map processResponse = await ProcessProviders().callGetProcessApi(
+      event.type.name,
+    );
+    // based on result start the queue
+
+    List<EachPollJob> jobs = [];
+    if (processResponse.containsKey('pollIds')) {
+      processResponse["pollIds"].forEach((job) {
+        jobs.add(EachPollJob.fromJson(job));
+      });
+    }
+    print("jobs");
+
+    print(jobs);
+    PollingService pollingService = PollingService(
+      onJobUpdate: (jobUpdate) {
+        // update your Bloc/UI state with jobUpdate
+        print('Job ${jobUpdate.jobId} status: ${jobUpdate.status}');
+        print(jobs.last.id);
+        if (jobs.last.id.toString() == jobUpdate.jobId) {
+          emit(ProcessCompleted());
+          // one of the process will be calling ai
+          // finally send the result to firebase
+        }
+      },
+    );
+
+    // perform one by one emit different states with messages
+
+    jobs.forEach((job) {
+      print("--------");
+      print(job.toJson());
+      pollingService.startPolling(job.id.toString());
+      emit(ChatLoading());
+      emit(DisplayLoadingWithText(job.name ?? ""));
+    });
   }
 
   @override

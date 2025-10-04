@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:chatai/common_functions.dart';
 import 'package:chatai/constants.dart';
 import 'package:dio/dio.dart';
@@ -33,6 +35,29 @@ class ImageUploadProvider {
     } on DioException catch (e) {
       Map error = CommonFunctions.handleDioError(e);
       return (null, error["message"].toString());
+    }
+  }
+
+  Future<String?> imageUrlToBase64(String imageUrl) async {
+    try {
+      final dio = Dio();
+      // Get image bytes from URL
+      final response = await dio.get<List<int>>(
+        imageUrl,
+        options: Options(responseType: ResponseType.bytes),
+      );
+      if (response.statusCode == 200) {
+        final bytes = response.data!;
+        // Convert bytes to base64 string
+        final base64String = base64Encode(bytes);
+        return base64String;
+      } else {
+        print('Failed to fetch image data. Status: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Error converting image to base64: $e');
+      return null;
     }
   }
 }
