@@ -1,28 +1,63 @@
+import 'dart:io';
+
 import 'package:chatai/bloc/chat_bloc/chat_bloc.dart';
 import 'package:chatai/bloc/chat_bloc/chat_event.dart';
+import 'package:chatai/models/chat_model.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:chat_bubbles/chat_bubbles.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../bloc/chat_bloc/chat_state.dart';
 
 class ChatScreen extends StatelessWidget {
-  final TextEditingController _controller = TextEditingController();
-
   ChatScreen({super.key});
   final ScrollController _scrollController = ScrollController();
 
-  void _sendMessage(BuildContext context) {
-    final text = _controller.text.trim();
+  void _sendMessage(BuildContext context, ChatType type, String message) {
+    String text = message.trim();
     if (text.isEmpty) return;
-    context.read<ChatBloc>().add(SendMessage(text, 'user'));
+    context.read<ChatBloc>().add(SendMessage(text, 'user', type));
     // context.read<ChatBloc>().add(SendMessage("Assistant reply.", 'assistant'));
-    _controller.clear();
+  }
+
+  void _sendImageMessage(BuildContext context, List<String> message) {
+    if (message.isEmpty) return;
+
+    for (var imgUrl in message) {
+      context.read<ChatBloc>().add(
+        SendMessage(imgUrl, 'user', ChatType.imageGeneration),
+      );
+    }
+    // context.read<ChatBloc>().add(SendMessage("Assistant reply.", 'assistant'));
+  }
+
+  Future<List<File>> pickFiles() async {
+    final result = await FilePicker.platform.pickFiles(allowMultiple: false);
+    if (result != null) {
+      return result.files.map((file) => File(file.path!)).toList();
+    }
+    return [];
+  }
+
+  Future<List<XFile>> pickImages() async {
+    final ImagePicker picker = ImagePicker();
+    List<XFile>? images = await picker.pickMultiImage();
+
+    return images;
   }
 
   Widget getUi(ChatState state) {
     if (state is ChatLoading) {
       return Center(child: CircularProgressIndicator());
+    } else if (state is DisplayLoadingWithText) {
+      return Center(
+        child: Row(
+          children: [Text(state.message), CircularProgressIndicator()],
+        ),
+      );
     } else if (state is ChatLoaded) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients) {
@@ -39,18 +74,63 @@ class ChatScreen extends StatelessWidget {
 
         itemCount: state.messages.length,
         itemBuilder: (context, idx) {
-          final m = state.messages[idx];
-          return BubbleSpecialOne(
-            text: m.text,
-            isSender: m.role == 'user',
-            color: m.role == 'user' ? Colors.blueAccent : Colors.grey.shade200,
-            textStyle: TextStyle(
-              color: m.role == 'user' ? Colors.white : Colors.black87,
-              fontSize: 16,
-            ),
-            tail: true,
-            // margin: BubbleEdges.only(top: 8),
-          );
+          ChatMessage m = state.messages[idx];
+          switch (m.type) {
+            case ChatType.text:
+              return BubbleSpecialOne(
+                text: m.text,
+                isSender: m.role == 'user',
+                color: m.role == 'user'
+                    ? Colors.blueAccent
+                    : Colors.grey.shade200,
+                textStyle: TextStyle(
+                  color: m.role == 'user' ? Colors.white : Colors.black87,
+                  fontSize: 16,
+                ),
+                tail: true,
+              );
+            case ChatType.imageGeneration:
+              return BubbleNormalImage(
+                isSender: m.role == 'user',
+                color: m.role == 'user'
+                    ? Colors.blueAccent
+                    : Colors.grey.shade200,
+                tail: true,
+                id: '',
+                image: Image.network(m.text),
+              );
+            case ChatType.dataProcessing:
+              return GestureDetector(
+                onTap: () {
+                  launchUrl(Uri.parse(m.text));
+                },
+                child: BubbleSpecialOne(
+                  text: 'File',
+                  isSender: m.role == 'user',
+                  color: m.role == 'user'
+                      ? Colors.blueAccent
+                      : Colors.grey.shade200,
+                  textStyle: TextStyle(
+                    color: m.role == 'user' ? Colors.white : Colors.black87,
+                    fontSize: 16,
+                  ),
+                  tail: true,
+                ),
+              );
+            // default:
+            //   return BubbleSpecialOne(
+            //     text: m.text,
+            //     isSender: m.role == 'user',
+            //     color: m.role == 'user'
+            //         ? Colors.blueAccent
+            //         : Colors.grey.shade200,
+            //     textStyle: TextStyle(
+            //       color: m.role == 'user' ? Colors.white : Colors.black87,
+            //       fontSize: 16,
+            //     ),
+            //     tail: true,
+            //   );
+          }
         },
       );
     } else if (state is ChatError) {
@@ -66,48 +146,64 @@ class ChatScreen extends StatelessWidget {
       create: (_) => ChatBloc()..add(LoadMessages()),
       child: Scaffold(
         appBar: AppBar(title: Text('Chat assistant')),
-        body: BlocBuilder<ChatBloc, ChatState>(
-          builder: (buildContext, state) {
-            return Column(
-              children: [
-                Expanded(child: getUi(state)),
-                SafeArea(
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _controller,
-                            decoration: InputDecoration(
-                              hintText: "Type a message...",
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(24),
-                              ),
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 20,
-                              ),
+        body: BlocListener<ChatBloc, ChatState>(
+          listener: (listenerContext, state) {
+            if (state is ImageUploadFailed) {
+            } else if (state is ImageUploaded) {
+              _sendImageMessage(listenerContext, state.urls);
+            }
+          },
+          child: BlocBuilder<ChatBloc, ChatState>(
+            builder: (buildContext, state) {
+              return Column(
+                children: [
+                  Expanded(child: getUi(state)),
+                  SafeArea(
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      child: MessageBar(
+                        onSend: (text) =>
+                            _sendMessage(buildContext, ChatType.text, text),
+                        actions: [
+                          InkWell(
+                            child: Icon(
+                              Icons.add,
+                              color: Colors.black,
+                              size: 24,
                             ),
-                            textInputAction: TextInputAction.send,
-                            onSubmitted: (_) => _sendMessage(buildContext),
+                            onTap: () async {
+                              await pickFiles();
+                            },
                           ),
-                        ),
-                        SizedBox(width: 8),
-                        CircleAvatar(
-                          radius: 24,
-                          backgroundColor: Colors.blueAccent,
-                          child: IconButton(
-                            icon: Icon(Icons.send, color: Colors.white),
-                            onPressed: () => _sendMessage(buildContext),
+                          Padding(
+                            padding: EdgeInsets.only(left: 8, right: 8),
+                            child: InkWell(
+                              child: Icon(
+                                Icons.camera_alt,
+                                color: Colors.green,
+                                size: 24,
+                              ),
+                              onTap: () async {
+                                List<XFile> images = await pickImages();
+                                if (images.isNotEmpty && buildContext.mounted) {
+                                  buildContext.read<ChatBloc>().add(
+                                    UploadImages(images),
+                                  );
+                                }
+                              },
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
-            );
-          },
+                ],
+              );
+            },
+          ),
         ),
       ),
     );

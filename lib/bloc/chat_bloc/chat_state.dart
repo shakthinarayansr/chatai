@@ -19,6 +19,30 @@ class ChatLoaded extends ChatState {
   List<Object?> get props => [messages];
 }
 
+class ImageUploaded extends ChatState {
+  final List<String> urls;
+  const ImageUploaded(this.urls);
+
+  @override
+  List<Object?> get props => [urls];
+}
+
+class ImageUploadFailed extends ChatState {
+  final String message;
+  const ImageUploadFailed(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+class DisplayLoadingWithText extends ChatState {
+  final String message;
+  const DisplayLoadingWithText(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
 class ChatError extends ChatState {
   final String error;
   const ChatError(this.error);
