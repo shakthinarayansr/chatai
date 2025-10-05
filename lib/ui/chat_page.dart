@@ -126,19 +126,6 @@ class _ChatScreenState extends State<ChatScreen> {
                         tail: true,
                       ),
                     );
-                  // default:
-                  //   return BubbleSpecialOne(
-                  //     text: m.text,
-                  //     isSender: m.role == 'user',
-                  //     color: m.role == 'user'
-                  //         ? Colors.blueAccent
-                  //         : Colors.grey.shade200,
-                  //     textStyle: TextStyle(
-                  //       color: m.role == 'user' ? Colors.white : Colors.black87,
-                  //       fontSize: 16,
-                  //     ),
-                  //     tail: true,
-                  //   );
                 }
               },
             ),
@@ -153,7 +140,14 @@ class _ChatScreenState extends State<ChatScreen> {
                   InkWell(
                     child: Icon(Icons.add, color: Colors.black, size: 24),
                     onTap: () async {
-                      await pickFiles();
+                      List<File> files = await pickFiles();
+                      if (buildContext.mounted && files.isNotEmpty) {
+                        _sendMessage(
+                          buildContext,
+                          ChatType.dataProcessing,
+                          "File",
+                        );
+                      }
                     },
                   ),
                   Padding(

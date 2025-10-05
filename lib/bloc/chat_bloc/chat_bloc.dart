@@ -132,8 +132,18 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       message = [
         {"type": "text", "text": event.text},
       ];
+    } else if (event.type == ChatType.text) {
+      message = [
+        {"type": "text", "text": event.text},
+      ];
     }
-    String reply = await SambaCloudService().sendChatMessage(messages: message);
+    String reply = '';
+    if (message.isNotEmpty) {
+      reply = await SambaCloudService().sendChatMessage(messages: message);
+    } else {
+      reply = "Your file is received";
+    }
+
     emit(AiReplyReceived(reply));
     emit(ProcessCompleted());
   }
