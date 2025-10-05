@@ -10,10 +10,7 @@ Future<JobUpdate> checkJobStatus(EachPollJob job) async {
   final Dio dio = Dio();
 
   // final url = 'https://chatai.free.beeceptor.com/job/$jobId';
-  toastification.show(
-    title: Text(job.name ?? ""),
-    autoCloseDuration: const Duration(seconds: 5),
-  );
+
   final url =
       'https://b91b1769-22fa-4230-b610-b2cc51351e9b.mock.pstmn.io/job/${job.id}';
   final response = await dio.get(url);

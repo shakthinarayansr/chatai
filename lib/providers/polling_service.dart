@@ -8,14 +8,15 @@ import '../models/job_update.dart';
 
 class PollingService {
   final Map<String, Timer> _activePollers = {};
-  final void Function(JobUpdate) onJobUpdate;
+  final void Function(JobUpdate)? onJobUpdate;
 
   Key key;
 
-  PollingService({required this.key, required this.onJobUpdate});
+  PollingService({required this.key, this.onJobUpdate});
 
-  void startPolling(EachPollJob id) {
-    final jobId = id.id.toString(); // capture jobId locally per iteration
+  void startPolling(EachPollJob job) {
+    //Parallel processing
+    final jobId = job.id.toString();
 
     if (_activePollers.containsKey(jobId)) return;
 
@@ -23,34 +24,42 @@ class PollingService {
       try {
         print('Polling $jobId');
 
-        JobUpdate jobUpdate = await checkJobStatus(id);
+        JobUpdate jobUpdate = await checkJobStatus(job);
         if (jobUpdate.status == JobStatus.completed ||
             jobUpdate.status == JobStatus.failed) {
           timer.cancel();
           _activePollers.remove(jobId);
         }
-        onJobUpdate(jobUpdate);
+        if (onJobUpdate != null) {
+          onJobUpdate!(jobUpdate);
+        }
       } catch (e) {
-        // Optionally handle error or retry
+        if (onJobUpdate != null) {
+          onJobUpdate!(
+            JobUpdate(jobId: job, success: false, status: JobStatus.failed),
+          );
+        }
       }
     });
   }
 
-  Future<void> pollSingleJob(
+  Future<JobUpdate> pollSingleJob(
     EachPollJob job, {
     Duration interval = const Duration(seconds: 2),
   }) async {
+    //Sequential processing
     bool done = false;
     while (!done) {
-      final jobUpdate = await checkJobStatus(job);
-      onJobUpdate(jobUpdate);
+      JobUpdate jobUpdate = await checkJobStatus(job);
       if (jobUpdate.status == JobStatus.completed ||
           jobUpdate.status == JobStatus.failed) {
         done = true;
+        return jobUpdate;
       } else {
         await Future.delayed(interval);
       }
     }
+    return JobUpdate(jobId: job, success: false, status: JobStatus.failed);
   }
 
   void stopAllPolling() {

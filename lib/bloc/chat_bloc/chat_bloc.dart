@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:chatai/models/chat_model.dart';
+import 'package:chatai/models/job_update.dart';
 import 'package:chatai/providers/get_process_provider.dart';
 import 'package:chatai/providers/image_upload_provider.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:toastification/toastification.dart';
 import '../../models/each_poll_job.dart';
 import '../../providers/polling_service.dart';
 import 'chat_event.dart';
@@ -90,14 +92,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     print("jobs");
 
     print(jobs);
-    PollingService pollingService = PollingService(
-      key: Key("1"),
-      onJobUpdate: (jobUpdate) {
-        // update your Bloc/UI state with jobUpdate
-        print('Job ${jobUpdate.jobId.id} status: ${jobUpdate.status}');
-        print(jobs.last.id);
-      },
-    );
+    PollingService pollingService = PollingService(key: Key("1"));
 
     // perform one by one emit different states with messages
 
@@ -107,7 +102,15 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       // pollingService.startPolling(job);
       emit(ChatLoading());
       emit(DisplayLoadingWithText(job.name ?? ""));
-      await pollingService.pollSingleJob(job);
+      JobUpdate jobUpdate = await pollingService.pollSingleJob(job);
+      if (jobUpdate.status == JobStatus.failed) {
+        toastification.show(
+          title: Text("${job.name ?? ""}failed"),
+          autoCloseDuration: const Duration(seconds: 5),
+          primaryColor: Colors.redAccent,
+        );
+        break;
+      }
     }
 
     emit(ProcessCompleted()); // this is not getting called TODO
