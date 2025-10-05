@@ -1,5 +1,7 @@
+import 'package:chatai/models/each_poll_job.dart';
+
 class JobUpdate {
-  final String jobId;
+  final EachPollJob jobId;
   final bool success;
   final dynamic data;
   final JobStatus status;

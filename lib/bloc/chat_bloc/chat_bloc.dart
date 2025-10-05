@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:chatai/models/chat_model.dart';
 import 'package:chatai/providers/get_process_provider.dart';
 import 'package:chatai/providers/image_upload_provider.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/each_poll_job.dart';
@@ -90,27 +91,26 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
     print(jobs);
     PollingService pollingService = PollingService(
+      key: Key("1"),
       onJobUpdate: (jobUpdate) {
         // update your Bloc/UI state with jobUpdate
-        print('Job ${jobUpdate.jobId} status: ${jobUpdate.status}');
+        print('Job ${jobUpdate.jobId.id} status: ${jobUpdate.status}');
         print(jobs.last.id);
-        if (jobs.last.id.toString() == jobUpdate.jobId) {
-          emit(ProcessCompleted());
-          // one of the process will be calling ai
-          // finally send the result to firebase
-        }
       },
     );
 
     // perform one by one emit different states with messages
 
-    jobs.forEach((job) {
+    for (var job in jobs) {
       print("--------");
       print(job.toJson());
-      pollingService.startPolling(job.id.toString());
+      // pollingService.startPolling(job);
       emit(ChatLoading());
       emit(DisplayLoadingWithText(job.name ?? ""));
-    });
+      await pollingService.pollSingleJob(job);
+    }
+
+    emit(ProcessCompleted()); // this is not getting called TODO
   }
 
   @override

@@ -1,14 +1,21 @@
+import 'package:chatai/models/each_poll_job.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/widgets.dart';
+import 'package:toastification/toastification.dart';
 
 import '../models/job_update.dart';
 
 // class JobStatusProvider {
-Future<JobUpdate> checkJobStatus(String jobId) async {
+Future<JobUpdate> checkJobStatus(EachPollJob job) async {
   final Dio dio = Dio();
 
   // final url = 'https://chatai.free.beeceptor.com/job/$jobId';
+  toastification.show(
+    title: Text(job.name ?? ""),
+    autoCloseDuration: const Duration(seconds: 5),
+  );
   final url =
-      'https://b91b1769-22fa-4230-b610-b2cc51351e9b.mock.pstmn.io/job/$jobId';
+      'https://b91b1769-22fa-4230-b610-b2cc51351e9b.mock.pstmn.io/job/${job.id}';
   final response = await dio.get(url);
   print(url);
   print(response.data);
@@ -25,15 +32,10 @@ Future<JobUpdate> checkJobStatus(String jobId) async {
       jobStatus = JobStatus.failed;
     }
 
-    return JobUpdate(
-      jobId: jobId,
-      status: jobStatus,
-      data: data,
-      success: true,
-    );
+    return JobUpdate(jobId: job, status: jobStatus, data: data, success: true);
   } else {
     return JobUpdate(
-      jobId: jobId,
+      jobId: job,
       status: JobStatus.failed,
       data: null,
       success: false,
