@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:chatai/common_functions.dart';
 import 'package:chatai/constants.dart';

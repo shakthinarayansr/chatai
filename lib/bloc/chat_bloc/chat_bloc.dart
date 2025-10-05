@@ -41,6 +41,11 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     if (urls.isNotEmpty) {
       emit(ImageUploaded(urls));
     } else {
+      toastification.show(
+        title: Text(message),
+        autoCloseDuration: const Duration(seconds: 5),
+        primaryColor: Colors.redAccent,
+      );
       emit(ImageUploadFailed(message));
     }
   }
@@ -55,7 +60,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
             .map((doc) => ChatMessage.fromFirestore(doc.data()))
             .toList();
 
-        if (emit.isDone) break; // Avoid emit if handler finished
+        if (emit.isDone) break;
 
         emit(ChatLoaded(messages));
       }
@@ -85,6 +90,17 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     Map processResponse = await ProcessProviders().callGetProcessApi(
       event.type.name,
     );
+
+    if (processResponse.containsKey("dioErrorType")) {
+      toastification.show(
+        title: Text(processResponse["message"]),
+        autoCloseDuration: const Duration(seconds: 5),
+        primaryColor: Colors.redAccent,
+      );
+      emit(ProcessCompleted());
+      return;
+    }
+
     // based on result start the queue
 
     List<EachPollJob> jobs = [];

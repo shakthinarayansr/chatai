@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 
 class CommonFunctions {
   static Map<String, dynamic> handleDioError(DioException e) {
@@ -51,7 +55,7 @@ class CommonFunctions {
           ? e.response?.statusCode.toString()
           : "",
     };
-
+    print(errorMap);
     return errorMap;
   }
 
@@ -75,5 +79,20 @@ class CommonFunctions {
     } else {
       return null;
     }
+  }
+
+  Future<List<File>> pickFiles() async {
+    final result = await FilePicker.platform.pickFiles(allowMultiple: false);
+    if (result != null) {
+      return result.files.map((file) => File(file.path!)).toList();
+    }
+    return [];
+  }
+
+  Future<List<XFile>> pickImages() async {
+    final ImagePicker picker = ImagePicker();
+    List<XFile>? images = await picker.pickMultiImage();
+
+    return images;
   }
 }

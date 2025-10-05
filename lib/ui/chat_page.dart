@@ -2,12 +2,13 @@ import 'dart:io';
 
 import 'package:chatai/bloc/chat_bloc/chat_bloc.dart';
 import 'package:chatai/bloc/chat_bloc/chat_event.dart';
+import 'package:chatai/common_functions.dart';
 import 'package:chatai/models/chat_model.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:chat_bubbles/chat_bubbles.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../bloc/chat_bloc/chat_state.dart';
@@ -22,11 +23,11 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   List<ChatMessage> messages = [];
   final ScrollController _scrollController = ScrollController();
+
   void _sendMessage(BuildContext context, ChatType type, String message) {
     String text = message.trim();
     if (text.isEmpty) return;
     context.read<ChatBloc>().add(SendMessage(text, 'user', type));
-    // context.read<ChatBloc>().add(SendMessage("Assistant reply.", 'assistant'));
   }
 
   void _sendImageMessage(BuildContext context, List<String> message) {
@@ -37,22 +38,6 @@ class _ChatScreenState extends State<ChatScreen> {
         SendMessage(imgUrl, 'user', ChatType.imageGeneration),
       );
     }
-    // context.read<ChatBloc>().add(SendMessage("Assistant reply.", 'assistant'));
-  }
-
-  Future<List<File>> pickFiles() async {
-    final result = await FilePicker.platform.pickFiles(allowMultiple: false);
-    if (result != null) {
-      return result.files.map((file) => File(file.path!)).toList();
-    }
-    return [];
-  }
-
-  Future<List<XFile>> pickImages() async {
-    final ImagePicker picker = ImagePicker();
-    List<XFile>? images = await picker.pickMultiImage();
-
-    return images;
   }
 
   Widget getUi(ChatState state, BuildContext buildContext) {
@@ -65,7 +50,11 @@ class _ChatScreenState extends State<ChatScreen> {
           children: [
             Text(state.message),
             SizedBox(width: 20),
-            CircularProgressIndicator(),
+            // CircularProgressIndicator(),
+            LoadingAnimationWidget.staggeredDotsWave(
+              color: Colors.blue,
+              size: 30,
+            ),
           ],
         ),
       );
@@ -140,7 +129,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   InkWell(
                     child: Icon(Icons.add, color: Colors.black, size: 24),
                     onTap: () async {
-                      List<File> files = await pickFiles();
+                      List<File> files = await CommonFunctions().pickFiles();
                       if (buildContext.mounted && files.isNotEmpty) {
                         _sendMessage(
                           buildContext,
@@ -159,7 +148,8 @@ class _ChatScreenState extends State<ChatScreen> {
                         size: 24,
                       ),
                       onTap: () async {
-                        List<XFile> images = await pickImages();
+                        List<XFile> images = await CommonFunctions()
+                            .pickImages();
                         if (images.isNotEmpty && buildContext.mounted) {
                           buildContext.read<ChatBloc>().add(
                             UploadImages(images),
