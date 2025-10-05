@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:chatai/common_functions.dart';
 import 'package:chatai/constants.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ImageUploadProvider {
@@ -12,13 +14,20 @@ class ImageUploadProvider {
 
     try {
       String fileName = imageFile.path.split('/').last;
-
-      FormData formData = FormData.fromMap({
-        "image": await MultipartFile.fromFile(
-          imageFile.path,
-          filename: fileName,
-        ),
-      });
+      FormData formData;
+      if (kIsWeb) {
+        Uint8List fileBytes = await imageFile.readAsBytes();
+        formData = FormData.fromMap({
+          "image": MultipartFile.fromBytes(fileBytes, filename: fileName),
+        });
+      } else {
+        formData = FormData.fromMap({
+          "image": await MultipartFile.fromFile(
+            imageFile.path,
+            filename: fileName,
+          ),
+        });
+      }
       var dio = Dio();
       var response = await dio.request(
         url,
