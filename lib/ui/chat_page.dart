@@ -185,7 +185,6 @@ class _ChatScreenState extends State<ChatScreen> {
         appBar: AppBar(title: Text('Chat assistant')),
         body: BlocListener<ChatBloc, ChatState>(
           listener: (listenerContext, state) {
-            print(state);
             if (state is ChatLoaded) {
               messages = state.messages;
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -201,7 +200,6 @@ class _ChatScreenState extends State<ChatScreen> {
             } else if (state is ImageUploaded) {
               _sendImageMessage(listenerContext, state.urls);
             } else if (state is ProcessCompleted) {
-              print("ProcessCompleted");
             } else if (state is AiReplyReceived) {
               listenerContext.read<ChatBloc>().add(
                 SendMessage(state.message, 'assistant', ChatType.text),

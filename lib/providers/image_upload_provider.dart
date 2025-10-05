@@ -42,25 +42,20 @@ class ImageUploadProvider {
     try {
       final dio = Dio();
       // Get image bytes from URL
-      print(imageUrl);
 
       final response = await dio.get<List<int>>(
         imageUrl,
         options: Options(responseType: ResponseType.bytes),
       );
-      print(response.data!);
       if (response.statusCode == 200) {
         final bytes = response.data!;
         // Convert bytes to base64 string
         final base64String = base64Encode(bytes);
-        print(base64String);
         return base64String;
       } else {
-        print('Failed to fetch image data. Status: ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      print('Error converting image to base64: $e');
       return null;
     }
   }

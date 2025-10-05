@@ -52,8 +52,6 @@ class CommonFunctions {
           : "",
     };
 
-    print("errorMap $errorMap");
-
     return errorMap;
   }
 

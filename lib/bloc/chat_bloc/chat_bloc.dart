@@ -80,6 +80,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     emit(MessageSent());
 
     if (event.role == 'assistant') return;
+    emit(DisplayLoadingWithText("Processing your response"));
 
     Map processResponse = await ProcessProviders().callGetProcessApi(
       event.type.name,
@@ -92,17 +93,10 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         jobs.add(EachPollJob.fromJson(job));
       });
     }
-    print("jobs");
 
-    print(jobs);
     PollingService pollingService = PollingService(key: Key("1"));
 
-    // perform one by one emit different states with messages
-
     for (var job in jobs) {
-      print("--------");
-      print(job.toJson());
-      // pollingService.startPolling(job);
       emit(ChatLoading());
       emit(DisplayLoadingWithText(job.name ?? ""));
       JobUpdate jobUpdate = await pollingService.pollSingleJob(job);

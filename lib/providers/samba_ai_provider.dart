@@ -27,8 +27,6 @@ class SambaCloudService {
       data: data,
     );
 
-    print(response.data);
-
     if (response.statusCode == 200) {
       Map data = response.data;
       final content = data['choices'][0]['message']['content'] as String;

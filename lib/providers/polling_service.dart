@@ -22,8 +22,6 @@ class PollingService {
 
     _activePollers[jobId] = Timer.periodic(Duration(seconds: 1), (timer) async {
       try {
-        print('Polling $jobId');
-
         JobUpdate jobUpdate = await checkJobStatus(job);
         if (jobUpdate.status == JobStatus.completed ||
             jobUpdate.status == JobStatus.failed) {
