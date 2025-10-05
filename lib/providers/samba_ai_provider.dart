@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:chatai/common_functions.dart';
 import 'package:chatai/constants.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -21,11 +22,21 @@ class SambaCloudService {
       ],
     });
     var dio = Dio();
-    var response = await dio.request(
-      '${Constants.sambaEndPoint}/chat/completions',
-      options: Options(method: 'POST', headers: headers),
-      data: data,
-    );
+    Response response;
+    try {
+      response = await dio.request(
+        '${Constants.sambaEndPoint}/chat/completions',
+        options: Options(method: 'POST', headers: headers),
+        data: data,
+      );
+    } on DioException catch (e) {
+      toastification.show(
+        title: Text(CommonFunctions.handleDioError(e)["message"].toString()),
+        autoCloseDuration: const Duration(seconds: 5),
+        primaryColor: Colors.redAccent,
+      );
+      return "I was not able to parse that";
+    }
 
     if (response.statusCode == 200) {
       Map data = response.data;
