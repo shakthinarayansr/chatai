@@ -4,6 +4,7 @@ import 'package:chatai/models/chat_model.dart';
 import 'package:chatai/models/job_update.dart';
 import 'package:chatai/providers/get_process_provider.dart';
 import 'package:chatai/providers/image_upload_provider.dart';
+import 'package:chatai/providers/samba_ai_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -78,6 +79,8 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     }
     emit(MessageSent());
 
+    if (event.role == 'assistant') return;
+
     Map processResponse = await ProcessProviders().callGetProcessApi(
       event.type.name,
     );
@@ -109,11 +112,30 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           autoCloseDuration: const Duration(seconds: 5),
           primaryColor: Colors.redAccent,
         );
+        emit(ProcessCompleted());
         break;
       }
     }
+    List<Map<String, dynamic>> message = [];
+    if (event.type == ChatType.imageGeneration) {
+      String image64 =
+          await ImageUploadProvider().imageUrlToBase64(event.text) ?? "";
 
-    emit(ProcessCompleted()); // this is not getting called TODO
+      message = [
+        {"type": "text", "text": "What do you see in this image"},
+        {
+          "type": "image_url",
+          "image_url": {"url": "data:image/jpeg;base64,$image64"},
+        },
+      ];
+    } else if (event.type == ChatType.text) {
+      message = [
+        {"type": "text", "text": event.text},
+      ];
+    }
+    String reply = await SambaCloudService().sendChatMessage(messages: message);
+    emit(AiReplyReceived(reply));
+    emit(ProcessCompleted());
   }
 
   @override

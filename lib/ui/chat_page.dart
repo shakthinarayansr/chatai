@@ -208,6 +208,10 @@ class _ChatScreenState extends State<ChatScreen> {
               _sendImageMessage(listenerContext, state.urls);
             } else if (state is ProcessCompleted) {
               print("ProcessCompleted");
+            } else if (state is AiReplyReceived) {
+              listenerContext.read<ChatBloc>().add(
+                SendMessage(state.message, 'assistant', ChatType.text),
+              );
             }
           },
           child: BlocBuilder<ChatBloc, ChatState>(

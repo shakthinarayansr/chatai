@@ -47,6 +47,14 @@ class DisplayLoadingWithText extends ChatState {
   List<Object?> get props => [message];
 }
 
+class AiReplyReceived extends ChatState {
+  final String message;
+  const AiReplyReceived(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
 class ChatError extends ChatState {
   final String error;
   const ChatError(this.error);
