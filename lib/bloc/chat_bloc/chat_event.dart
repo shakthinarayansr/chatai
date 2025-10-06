@@ -15,7 +15,8 @@ class SendMessage extends ChatEvent {
   final String text;
   final String role;
   final ChatType type;
-  const SendMessage(this.text, this.role, this.type);
+  final List<ChatMessage> messages;
+  const SendMessage(this.text, this.role, this.type, this.messages);
 
   @override
   List<Object?> get props => [text, role, type];

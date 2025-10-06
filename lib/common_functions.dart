@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:chatai/models/chat_model.dart';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
@@ -57,6 +58,17 @@ class CommonFunctions {
     };
     print(errorMap);
     return errorMap;
+  }
+
+  static String getAiType(ChatType type) {
+    switch (type) {
+      case ChatType.text:
+        return "text";
+      case ChatType.imageGeneration:
+        return "image_url";
+      default:
+        return "text";
+    }
   }
 
   static String? getMessage(Map data) {

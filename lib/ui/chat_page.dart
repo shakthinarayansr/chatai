@@ -27,7 +27,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void _sendMessage(BuildContext context, ChatType type, String message) {
     String text = message.trim();
     if (text.isEmpty) return;
-    context.read<ChatBloc>().add(SendMessage(text, 'user', type));
+    context.read<ChatBloc>().add(SendMessage(text, 'user', type, messages));
   }
 
   void _sendImageMessage(BuildContext context, List<String> message) {
@@ -35,7 +35,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     for (var imgUrl in message) {
       context.read<ChatBloc>().add(
-        SendMessage(imgUrl, 'user', ChatType.imageGeneration),
+        SendMessage(imgUrl, 'user', ChatType.imageGeneration, messages),
       );
     }
   }
@@ -212,7 +212,7 @@ class _ChatScreenState extends State<ChatScreen> {
             _sendImageMessage(listenerContext, state.urls);
           } else if (state is AiReplyReceived) {
             listenerContext.read<ChatBloc>().add(
-              SendMessage(state.message, 'assistant', ChatType.text),
+              SendMessage(state.message, 'assistant', ChatType.text, messages),
             );
           }
         },

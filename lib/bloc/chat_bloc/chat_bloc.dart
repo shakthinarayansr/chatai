@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:chatai/common_functions.dart';
 import 'package:chatai/models/chat_model.dart';
 import 'package:chatai/models/job_update.dart';
 import 'package:chatai/providers/get_process_provider.dart';
@@ -46,7 +47,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       await batch.commit();
       emit(ChatCleared());
     } catch (e) {
-      print('Error deleting messages: $e');
       toastification.show(
         title: Text('Error deleting messages: $e'),
         autoCloseDuration: const Duration(seconds: 5),
@@ -161,24 +161,61 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       }
     }
     List<Map<String, dynamic>> message = [];
+    List<Map<String, dynamic>> oldMessages = [];
+    if (event.messages.isNotEmpty) {
+      int i = 0;
+      for (var eachMessage in event.messages.reversed) {
+        oldMessages.add({
+          "role": eachMessage.role,
+          "content": [
+            {
+              "type": CommonFunctions.getAiType(eachMessage.type),
+              CommonFunctions.getAiType(eachMessage.type): eachMessage.text,
+            },
+          ],
+        });
+
+        if (i >= 10) {
+          break;
+        } else {
+          i++;
+        }
+      }
+    }
     if (event.type == ChatType.imageGeneration) {
       String image64 =
           await ImageUploadProvider().imageUrlToBase64(event.text) ?? "";
 
+      if (oldMessages.isEmpty) {
+        oldMessages.add({
+          "role": "user",
+          "content": [
+            {"type": "text", "text": "What do you see in this image"},
+          ],
+        });
+      }
+
       message = [
-        {"type": "text", "text": "What do you see in this image"},
+        ...oldMessages.reversed,
         {
-          "type": "image_url",
-          "image_url": {"url": "data:image/jpeg;base64,$image64"},
+          "role": "user",
+          "content": [
+            {
+              "type": "image_url",
+              "image_url": {"url": "data:image/jpeg;base64,$image64"},
+            },
+          ],
         },
       ];
     } else if (event.type == ChatType.text) {
       message = [
-        {"type": "text", "text": event.text},
-      ];
-    } else if (event.type == ChatType.text) {
-      message = [
-        {"type": "text", "text": event.text},
+        ...oldMessages.reversed,
+        {
+          "role": "user",
+          "content": [
+            {"type": "text", "text": event.text},
+          ],
+        },
       ];
     }
     String reply = '';

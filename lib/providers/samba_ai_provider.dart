@@ -17,9 +17,10 @@ class SambaCloudService {
     var data = json.encode({
       "stream": false,
       "model": "Llama-4-Maverick-17B-128E-Instruct",
-      "messages": [
-        {"role": "user", "content": messages},
-      ],
+      "messages": messages,
+      //  [
+      //   {"role": "user", "content": messages},
+      // ],
     });
     var dio = Dio();
     Response response;
@@ -37,8 +38,10 @@ class SambaCloudService {
       );
       return "I was not able to parse that";
     }
-
-    if (response.statusCode == 200) {
+    if (response.statusCode == 200 &&
+        response.data.isNotEmpty &&
+        response.data.containsKey("choices") &&
+        response.data["choices"].isNotEmpty) {
       Map data = response.data;
       final content = data['choices'][0]['message']['content'] as String;
       return content;
