@@ -93,7 +93,7 @@ class CommonFunctions {
     }
   }
 
-  Future<List<File>> pickFiles() async {
+  Future<List<File>> pickFile() async {
     final result = await FilePicker.platform.pickFiles(allowMultiple: false);
     if (result != null) {
       return result.files.map((file) => File(file.path!)).toList();

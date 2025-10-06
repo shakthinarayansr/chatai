@@ -53,7 +53,8 @@ class DisplayLoadingWithText extends ChatState {
 
 class AiReplyReceived extends ChatState {
   final String message;
-  const AiReplyReceived(this.message);
+  final ChatType type;
+  const AiReplyReceived(this.message, {this.type = ChatType.text});
 
   @override
   List<Object?> get props => [message];

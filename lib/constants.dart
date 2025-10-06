@@ -6,4 +6,6 @@ class Constants {
   static const jobEndPoint =
       'https://b91b1769-22fa-4230-b610-b2cc51351e9b.mock.pstmn.io/';
   static const sambaEndPoint = 'https://api.sambanova.ai/v1';
+  static const commentsEndPoint =
+      'https://json-placeholder.mock.beeceptor.com/posts/1';
 }

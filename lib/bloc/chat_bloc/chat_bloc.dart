@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:chatai/common_functions.dart';
 import 'package:chatai/models/chat_model.dart';
 import 'package:chatai/models/job_update.dart';
+import 'package:chatai/providers/fetch_comments_provider.dart';
 import 'package:chatai/providers/get_process_provider.dart';
 import 'package:chatai/providers/image_upload_provider.dart';
 import 'package:chatai/providers/samba_ai_provider.dart';
@@ -219,13 +221,16 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       ];
     }
     String reply = '';
-    if (message.isNotEmpty) {
+    if (message.isNotEmpty &&
+        [ChatType.imageGeneration, ChatType.text].contains(event.type)) {
       reply = await SambaCloudService().sendChatMessage(messages: message);
-    } else {
-      reply = "Your file is received";
+      emit(AiReplyReceived(reply));
+    } else if (ChatType.dataProcessing == event.type) {
+      Map response = await FetchCommentsProvider().fetchComments();
+      reply = jsonEncode(response);
+      emit(AiReplyReceived(reply, type: event.type));
     }
 
-    emit(AiReplyReceived(reply));
     emit(ProcessCompleted());
   }
 

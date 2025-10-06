@@ -1,15 +1,16 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:chatai/bloc/chat_bloc/chat_bloc.dart';
 import 'package:chatai/bloc/chat_bloc/chat_event.dart';
 import 'package:chatai/common_functions.dart';
 import 'package:chatai/models/chat_model.dart';
+import 'package:chatai/ui/json_viewer_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:chat_bubbles/chat_bubbles.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../bloc/chat_bloc/chat_state.dart';
 
@@ -28,6 +29,12 @@ class _ChatScreenState extends State<ChatScreen> {
     String text = message.trim();
     if (text.isEmpty) return;
     context.read<ChatBloc>().add(SendMessage(text, 'user', type, messages));
+  }
+
+  void _sendFileMessage(BuildContext context, ChatType type, String message) {
+    String text = message.trim();
+    if (text.isEmpty) return;
+    context.read<ChatBloc>().add(SendMessage(message, 'user', type, messages));
   }
 
   void _sendImageMessage(BuildContext context, List<String> message) {
@@ -96,12 +103,9 @@ class _ChatScreenState extends State<ChatScreen> {
                       image: Image.network(m.text),
                     );
                   case ChatType.dataProcessing:
-                    return GestureDetector(
-                      onTap: () {
-                        launchUrl(Uri.parse(m.text));
-                      },
-                      child: BubbleSpecialOne(
-                        text: 'File',
+                    if (m.role == 'user') {
+                      return BubbleSpecialOne(
+                        text: m.text,
                         isSender: m.role == 'user',
                         color: m.role == 'user'
                             ? Colors.blueAccent
@@ -113,8 +117,34 @@ class _ChatScreenState extends State<ChatScreen> {
                           fontSize: 16,
                         ),
                         tail: true,
-                      ),
-                    );
+                      );
+                    } else {
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  JsonDisplayPage(jsonData: jsonDecode(m.text)),
+                            ),
+                          );
+                        },
+                        child: BubbleSpecialThree(
+                          text: m.text + "\n\n Click to view parsed view",
+                          isSender: m.role == 'user',
+                          color: m.role == 'user'
+                              ? Colors.blueAccent
+                              : Colors.grey.shade200,
+                          textStyle: TextStyle(
+                            color: m.role == 'user'
+                                ? Colors.white
+                                : Colors.black87,
+                            fontSize: 16,
+                          ),
+                          tail: true,
+                        ),
+                      );
+                    }
                 }
               },
             ),
@@ -129,12 +159,13 @@ class _ChatScreenState extends State<ChatScreen> {
                   InkWell(
                     child: Icon(Icons.add, color: Colors.black, size: 24),
                     onTap: () async {
-                      List<File> files = await CommonFunctions().pickFiles();
+                      List<File> files = await CommonFunctions().pickFile();
                       if (buildContext.mounted && files.isNotEmpty) {
-                        _sendMessage(
+                        print(files.first.path);
+                        _sendFileMessage(
                           buildContext,
                           ChatType.dataProcessing,
-                          "File",
+                          files.first.path.split("/").last,
                         );
                       }
                     },
@@ -212,7 +243,7 @@ class _ChatScreenState extends State<ChatScreen> {
             _sendImageMessage(listenerContext, state.urls);
           } else if (state is AiReplyReceived) {
             listenerContext.read<ChatBloc>().add(
-              SendMessage(state.message, 'assistant', ChatType.text, messages),
+              SendMessage(state.message, 'assistant', state.type, messages),
             );
           }
         },
