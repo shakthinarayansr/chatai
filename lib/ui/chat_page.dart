@@ -167,40 +167,78 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  Future<bool?> showClearChatConfirmation(BuildContext confirmationContext) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Clear Chat?'),
+        content: Text('Are you sure you want to clear all chat messages?'),
+        actions: [
+          TextButton(
+            child: Text('Cancel'),
+            onPressed: () => Navigator.of(context).pop(false),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              confirmationContext.read<ChatBloc>().add(DeleteAllMessages());
+              Navigator.of(context).pop(false);
+            },
+            child: Text('Clear'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => ChatBloc()..add(LoadMessages()),
-      child: Scaffold(
-        appBar: AppBar(title: Text('Chat assistant')),
-        body: BlocListener<ChatBloc, ChatState>(
-          listener: (listenerContext, state) {
-            if (state is ChatLoaded) {
-              messages = state.messages;
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (_scrollController.hasClients) {
-                  _scrollController.animateTo(
-                    _scrollController.position.maxScrollExtent,
-                    duration: Duration(milliseconds: 300),
-                    curve: Curves.easeOut,
-                  );
-                }
-              });
-            } else if (state is ImageUploadFailed) {
-            } else if (state is ImageUploaded) {
-              _sendImageMessage(listenerContext, state.urls);
-            } else if (state is ProcessCompleted) {
-            } else if (state is AiReplyReceived) {
-              listenerContext.read<ChatBloc>().add(
-                SendMessage(state.message, 'assistant', ChatType.text),
-              );
-            }
+      child: BlocListener<ChatBloc, ChatState>(
+        listener: (listenerContext, state) {
+          if (state is ChatLoaded) {
+            messages = state.messages;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (_scrollController.hasClients) {
+                _scrollController.animateTo(
+                  _scrollController.position.maxScrollExtent,
+                  duration: Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                );
+              }
+            });
+          } else if (state is ImageUploaded) {
+            _sendImageMessage(listenerContext, state.urls);
+          } else if (state is AiReplyReceived) {
+            listenerContext.read<ChatBloc>().add(
+              SendMessage(state.message, 'assistant', ChatType.text),
+            );
+          }
+        },
+        child: BlocBuilder<ChatBloc, ChatState>(
+          builder: (buildContext, state) {
+            return Scaffold(
+              appBar: AppBar(
+                title: Row(
+                  children: [
+                    Text('Chat assistant'),
+                    Spacer(),
+                    GestureDetector(
+                      onTap: () {
+                        showClearChatConfirmation(buildContext);
+                      },
+                      child: Icon(
+                        Icons.delete_forever_outlined,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              body: getUi(state, buildContext),
+            );
           },
-          child: BlocBuilder<ChatBloc, ChatState>(
-            builder: (buildContext, state) {
-              return getUi(state, buildContext);
-            },
-          ),
         ),
       ),
     );

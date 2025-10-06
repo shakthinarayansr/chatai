@@ -15,6 +15,10 @@ class MessageSent extends ChatState {}
 
 class ProcessCompleted extends ChatState {}
 
+class ChatCleared extends ChatState {}
+
+class ChatClearError extends ChatState {}
+
 class ChatLoaded extends ChatState {
   final List<ChatMessage> messages;
   const ChatLoaded(this.messages);

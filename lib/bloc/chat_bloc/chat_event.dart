@@ -21,6 +21,8 @@ class SendMessage extends ChatEvent {
   List<Object?> get props => [text, role, type];
 }
 
+class DeleteAllMessages extends ChatEvent {}
+
 class UploadImages extends ChatEvent {
   final List<XFile> images;
 

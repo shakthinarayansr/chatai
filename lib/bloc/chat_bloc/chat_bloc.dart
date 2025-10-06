@@ -22,6 +22,40 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<LoadMessages>(_loadMessage);
     on<SendMessage>(_sendMessage);
     on<UploadImages>(_uploadImages);
+    on<DeleteAllMessages>(_onDeleteAllMessages);
+  }
+  Future<void> _onDeleteAllMessages(
+    DeleteAllMessages event,
+    Emitter<void> emit,
+  ) async {
+    try {
+      emit(DisplayLoadingWithText("Clearing chat"));
+
+      final FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+      // Query all message documents
+      final querySnapshot = await firestore.collection('messages').get();
+
+      // Batch delete for efficiency and atomicity
+      final batch = firestore.batch();
+
+      for (final doc in querySnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+
+      await batch.commit();
+      emit(ChatCleared());
+    } catch (e) {
+      print('Error deleting messages: $e');
+      toastification.show(
+        title: Text('Error deleting messages: $e'),
+        autoCloseDuration: const Duration(seconds: 5),
+        primaryColor: Colors.redAccent,
+      );
+      emit(ChatClearError());
+
+      // Handle error or emit failure state if using states
+    }
   }
 
   Future<void> _uploadImages(UploadImages event, emit) async {
